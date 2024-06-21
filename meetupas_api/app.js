@@ -43,5 +43,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/meetups', require('./routes/meetups'));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+const PORT = process.env.PORT;
+app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`)
+    }
+);

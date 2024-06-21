@@ -3,27 +3,15 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const Joi = require('joi');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
+const {registerSchema, loginSchema} = require('../dto/authSchemas');
 
 const jwtSecret = process.env.JWT_SECRET;
 const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET;
 const accessTokenExpiry = '15m';
 const refreshTokenExpiry = '7d';
-
-const registerSchema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(6).required(),
-    name: Joi.string().required(),
-    role: Joi.string().valid('USER', 'ORGANIZER').required(),
-});
-
-const loginSchema = Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().required(),
-});
 
 const generateTokens = (user) => {
     const accessToken = jwt.sign({ id: user.id, role: user.role }, jwtSecret, { expiresIn: accessTokenExpiry });
@@ -259,7 +247,7 @@ router.post('/token', async (req, res) => {
  *                   enum: [USER, ORGANIZER]
  */
 
-router.get('/me', passport.authenticate('jwt', { session: false }), (req, res) => {
+router.get('/info', passport.authenticate('jwt', { session: false }), (req, res) => {
     res.json(req.user);
 });
 

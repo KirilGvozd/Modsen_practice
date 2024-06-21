@@ -3,16 +3,8 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const Joi = require('joi');
 const passport = require('passport');
-
-const meetupSchema = Joi.object({
-    title: Joi.string().required(),
-    description: Joi.string().required(),
-    tags: Joi.array().items(Joi.string()).required(),
-    time: Joi.date().required(),
-    location: Joi.string().required(),
-});
+const meetupSchema = require('../dto/meetupSchemas');
 
 /**
  * @swagger
