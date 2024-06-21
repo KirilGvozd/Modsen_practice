@@ -251,4 +251,13 @@ router.get('/info', passport.authenticate('jwt', { session: false }), (req, res)
     res.json(req.user);
 });
 
+router.get('/:id', async (req, res) => {
+    const user = await prisma.user.findUnique({where: { id: +req.params.id } });
+    if (!user) {
+        return res.status(404).json({error: 'User not found'});
+    }
+
+    res.status(200).json(user);
+});
+
 module.exports = router;
