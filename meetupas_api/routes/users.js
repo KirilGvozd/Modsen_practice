@@ -37,10 +37,60 @@ const saveRefreshToken = async (token, userId, role) => {
             token,
             userId,
             role,
-            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),  // 7 days from now
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         },
     });
 };
+
+/**
+ * @swagger
+ * tags:
+ *   name: Users
+ *   description: API for users
+ */
+
+/**
+ * @swagger
+ * /api/users/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *               - role
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [USER, ORGANIZER]
+ *     responses:
+ *       201:
+ *         description: The user was successfully created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Bad request
+ */
 
 router.post('/register', async (req, res) => {
     const { error, value } = registerSchema.validate(req.body);
@@ -65,6 +115,42 @@ router.post('/register', async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/users/login:
+ *   post:
+ *     summary: Log in a user
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Successful login
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Invalid email or password
+ */
+
 router.post('/login', async (req, res) => {
     const { error, value } = loginSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
@@ -81,19 +167,62 @@ router.post('/login', async (req, res) => {
     res.json({ accessToken, refreshToken });
 });
 
+/**
+ * @swagger
+ * /api/users/token:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Tokens refreshed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Refresh token is required
+ *       403:
+ *         description: Invalid refresh token
+ */
+
 router.post('/token', async (req, res) => {
     const { refreshToken } = req.body;
-    if (!refreshToken) return res.status(400).json({ error: 'Refresh token is required' });
+    if (!refreshToken) {
+        return res.status(400).json({ error: 'Refresh token is required' });
+    }
 
     try {
         const payload = jwt.verify(refreshToken, refreshTokenSecret);
         const savedToken = await prisma.refreshToken.findUnique({ where: { token: refreshToken } });
-        if (!savedToken) return res.status(403).json({ error: 'Invalid refresh token' });
+        if (!savedToken) {
+            return res.status(403).json({ error: 'Invalid refresh token' });
+        }
 
         const user = await prisma.user.findUnique({ where: { id: payload.id } });
-        if (!user) return res.status(403).json({ error: 'User not found' });
+        if (!user) {
+            return res.status(403).json({ error: 'User not found' });
+        }
 
-        const { accessToken, newRefreshToken } = generateTokens(user);
+        await prisma.refreshToken.delete({ where: { token: refreshToken } });
+
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user);
         await saveRefreshToken(newRefreshToken, user.id, user.role);
 
         res.json({ accessToken, refreshToken: newRefreshToken });
@@ -101,6 +230,34 @@ router.post('/token', async (req, res) => {
         return res.status(403).json({ error: 'Invalid refresh token' });
     }
 });
+
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Get current user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Current user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 email:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *                   enum: [USER, ORGANIZER]
+ */
 
 router.get('/me', passport.authenticate('jwt', { session: false }), (req, res) => {
     res.json(req.user);

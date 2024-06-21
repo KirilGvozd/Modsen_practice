@@ -14,6 +14,72 @@ const meetupSchema = Joi.object({
     location: Joi.string().required(),
 });
 
+/**
+ * @swagger
+ * tags:
+ *   name: Meetups
+ *   description: API for meetups
+ */
+
+/**
+ * @swagger
+ * /api/meetups:
+ *   get:
+ *     summary: Get a list of meetups
+ *     tags: [Meetups]
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of tags
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *         description: Sort by field
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: List of meetups
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   title:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   tags:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   time:
+ *                     type: string
+ *                     format: date-time
+ *                   location:
+ *                     type: string
+ */
+
 router.get('/', async (req, res) => {
     const { search, tags, sort, page = 1, limit = 10 } = req.query;
 
@@ -38,11 +104,114 @@ router.get('/', async (req, res) => {
     res.json(meetups);
 });
 
+/**
+ * @swagger
+ * /api/meetups/{id}:
+ *   get:
+ *     summary: Get a meetup by ID
+ *     tags: [Meetups]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The meetup ID
+ *     responses:
+ *       200:
+ *         description: Meetup details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 tags:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 time:
+ *                   type: string
+ *                   format: date-time
+ *                 location:
+ *                   type: string
+ *       404:
+ *         description: Meetup not found
+ */
+
 router.get('/:id', async (req, res) => {
     const meetup = await prisma.meetup.findUnique({ where: { id: +req.params.id } });
     if (!meetup) return res.status(404).json({ error: 'Meetup not found' });
     res.json(meetup);
 });
+
+/**
+ * @swagger
+ * /api/meetups:
+ *   post:
+ *     summary: Create a new meetup
+ *     tags: [Meetups]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - tags
+ *               - time
+ *               - location
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               time:
+ *                 type: string
+ *                 format: date-time
+ *               location:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Meetup created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 tags:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 time:
+ *                   type: string
+ *                   format: date-time
+ *                 location:
+ *                   type: string
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Only organizers can create meetups
+ */
 
 router.post('/', passport.authenticate('jwt', { session: false }), async (req, res) => {
     if (req.user.role !== 'ORGANIZER') {
@@ -60,6 +229,78 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
     res.status(201).json(meetup);
 });
 
+/**
+ * @swagger
+ * /api/meetups/{id}:
+ *   put:
+ *     summary: Update a meetup
+ *     tags: [Meetups]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The meetup ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - tags
+ *               - time
+ *               - location
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               time:
+ *                 type: string
+ *                 format: date-time
+ *               location:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Meetup updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 title:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 tags:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 time:
+ *                   type: string
+ *                   format: date-time
+ *                 location:
+ *                   type: string
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Only organizers can update meetups
+ *       404:
+ *         description: Meetup not found
+ */
+
 router.put('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const meetup = await prisma.meetup.findUnique({ where: { id: +req.params.id } });
     if (!meetup) return res.status(404).json({ error: 'Meetup not found' });
@@ -74,6 +315,30 @@ router.put('/:id', passport.authenticate('jwt', { session: false }), async (req,
     });
     res.json(updatedMeetup);
 });
+
+/**
+ * @swagger
+ * /api/meetups/{id}:
+ *   delete:
+ *     summary: Delete a meetup
+ *     tags: [Meetups]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: The meetup ID
+ *     responses:
+ *       200:
+ *         description: Meetup deleted
+ *       403:
+ *         description: Only organizers can delete meetups
+ *       404:
+ *         description: Meetup not found
+ */
 
 router.delete('/:id', passport.authenticate('jwt', { session: false }), async (req, res) => {
     const meetup = await prisma.meetup.findUnique({ where: { id: +req.params.id } });
