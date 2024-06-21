@@ -13,13 +13,28 @@ app.use(passport.initialize());
 
 const swaggerOptions = {
     swaggerDefinition: {
+        openapi: '3.0.0',
         info: {
-            title: "Meetup API",
-            description: "API for managing meetups",
-            version: "1.0.0"
-        }
+            title: 'Meetup API',
+            description: 'API for managing meetups',
+            version: '1.0.0'
+        },
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            }
+        },
+        security: [
+            {
+                bearerAuth: []
+            }
+        ]
     },
-    apis: ["./routes/*.js"]
+    apis: ['./routes/*.js']
 };
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));

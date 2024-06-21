@@ -2,7 +2,7 @@ require('dotenv').config();
 const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const jwtSecret = process.env.JWT_SECRET || 'jwt_secret';
+const jwtSecret = process.env.JWT_SECRET;
 
 module.exports = (passport) => {
     const opts = {
