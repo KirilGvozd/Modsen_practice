@@ -222,7 +222,7 @@ router.post('/token', async (req, res) => {
 
 /**
  * @swagger
- * /api/users/me:
+ * /api/users/info:
  *   get:
  *     summary: Get current user
  *     tags: [Users]

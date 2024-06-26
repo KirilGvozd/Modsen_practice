@@ -4,7 +4,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const passport = require('passport');
-const meetupSchema = require('../dto/meetupSchemas');
+const {meetupSchema, assignForMeetupSchema} = require('../dto/meetupSchemas');
 
 /**
  * @swagger
@@ -210,7 +210,10 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
         return res.status(403).json({ error: 'Only organizers can create meetups' });
     }
     const { error, value } = meetupSchema.validate(req.body);
-    if (error) return res.status(400).json({ error: error.details[0].message });
+    if (error) {
+        return res.status(400).json({error: error.details[0].message});
+    }
+
 
     const meetup = await prisma.meetup.create({
         data: {
@@ -219,6 +222,63 @@ router.post('/', passport.authenticate('jwt', { session: false }), async (req, r
         }
     });
     res.status(201).json(meetup);
+});
+
+/**
+ * @swagger
+ * /api/meetups/register:
+ *   post:
+ *     summary: Assign for a meetup
+ *     tags: [Meetups]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - meetupId
+ *             properties:
+ *               meetupId:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Successfully assigned for a meetup!
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 meetupId:
+ *                   type: integer
+ *       400:
+ *         description: Invalid input
+ *       403:
+ *         description: Only users can assign for a meetup!
+ */
+
+router.post('/register', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    if (req.user.role !== 'USER') {
+        return res.status(403).json({error: 'Only users can assign for a meetup!'});
+    }
+    const { error, value } = assignForMeetupSchema.validate(req.body);
+    if (error) {
+        return res.status(400).json({error: error.details[0].message});
+    }
+
+    if (!await prisma.meetup.findUnique({where: {id: value.meetupId,}})) {
+        return res.status(404).json({error: 'There is no such meetup!'});
+    }
+
+    const assignForMeetup = await prisma.usersMeetups.create({
+        data: {
+            ...value,
+            userId: req.user.id
+        }
+    });
+    res.status(201).json(`Successfully assigned for a meetup!\n${assignForMeetup}`);
 });
 
 /**

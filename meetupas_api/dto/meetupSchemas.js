@@ -7,4 +7,8 @@ const meetupSchema = Joi.object({
     location: Joi.string().required(),
 });
 
-module.exports = meetupSchema;
+const assignForMeetupSchema = Joi.object({
+    meetupId: Joi.number().required(),
+});
+
+module.exports = { meetupSchema, assignForMeetupSchema };

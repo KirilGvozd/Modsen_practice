@@ -8,14 +8,15 @@ generator client {
 }
 
 model Meetup {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  tags        String[]
-  time        DateTime
-  location    String
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  id           Int            @id @default(autoincrement())
+  title        String
+  description  String
+  tags         String[]
+  time         DateTime
+  location     String
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id])
+  UsersMeetups UsersMeetups[]
 }
 
 model User {
@@ -26,6 +27,7 @@ model User {
   role         Role
   meetups      Meetup[]
   RefreshToken RefreshToken[]
+  UsersMeetups UsersMeetups[]
 }
 
 model RefreshToken {
@@ -36,6 +38,14 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   expiresAt DateTime
+}
+
+model UsersMeetups {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  meetupId Int
+  user     User   @relation(fields: [userId], references: [id])
+  meetup   Meetup @relation(fields: [meetupId], references: [id])
 }
 
 enum Role {
