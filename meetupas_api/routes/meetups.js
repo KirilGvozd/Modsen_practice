@@ -70,6 +70,10 @@ const {meetupSchema, assignForMeetupSchema} = require('../dto/meetupSchemas');
  *                     format: date-time
  *                   location:
  *                     type: string
+ *                   Attendants:
+ *                     type: array
+ *                     items:
+ *                       type: string
  */
 
 router.get('/', async (req, res) => {
@@ -91,10 +95,32 @@ router.get('/', async (req, res) => {
         orderBy: sort ? { [sort]: 'asc' } : undefined,
         skip: (page - 1) * limit,
         take: +limit,
+        include: {
+            UsersMeetups: {
+                include: {
+                    user: {
+                        select: {
+                            name: true
+                        }
+                    }
+                }
+            }
+        }
     });
 
-    res.json(meetups);
+    const result = meetups.map(meetup => ({
+        id: meetup.id,
+        title: meetup.title,
+        description: meetup.description,
+        tags: meetup.tags,
+        time: meetup.time,
+        location: meetup.location,
+        Attendants: meetup.UsersMeetups.map(um => um.user.name)
+    }));
+
+    res.json(result);
 });
+
 
 /**
  * @swagger
